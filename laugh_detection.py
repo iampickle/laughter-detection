@@ -76,13 +76,3 @@ class laughdetect:
         for setting, instances in instance_dict.items():
             laughs = [{'start': i[0], 'end': i[1]} for i in instances]
             print(laughs)
-
-
-if __name__ == "__main__":
-    audio_path = "./tst_wave.wav"  # Replace with the actual path to your audio file
-    thresholds = 0.85
-    min_lengths = 0.9
-    num_processes = 4
-
-    ld = laughdetect(audio_path, thresholds, min_lengths, num_processes)
-    ld.start()
