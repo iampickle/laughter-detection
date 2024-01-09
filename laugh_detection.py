@@ -1,5 +1,4 @@
 import configs
-from distutils.util import strtobool
 from functools import partial
 import laugh_segmenter
 import os
@@ -10,7 +9,8 @@ sys.path.append('./utils/')
 import torch_utils
 import data_loaders
 import audio_utils
-import multiprocessing
+import time
+from datetime import datetime
 
 sample_rate = 8000
 model_path = 'checkpoints/in_use/resnet_with_augmentation'
@@ -26,8 +26,10 @@ class laughdetect:
         self.thresholds = [thresholds]
         self.min_lengths = [min_lengths]
         self.num_processes = num_processes
+        self.result = None
 
     def start(self):
+        starttime = time.time()
         # Load the Model
         model = config['model'](
             dropout_rate=0.0, linear_layer_size=config['linear_layer_size'], filter_sizes=config['filter_sizes'])
@@ -53,9 +55,9 @@ class laughdetect:
             inference_dataset, num_workers=self.num_processes, batch_size=8, shuffle=False, collate_fn=collate_fn)
 
         # Make Predictions
-
+        print('start laught analysis')
         probs = []
-        for model_inputs, _ in inference_generator:
+        for model_inputs, _ in tqdm(inference_generator):
             x = torch.from_numpy(model_inputs).float().to(device)
             preds = model(x).cpu().detach().numpy().squeeze()
             if len(preds.shape) == 0:
@@ -74,5 +76,7 @@ class laughdetect:
             probs, thresholds=self.thresholds, min_lengths=self.min_lengths, fps=fps)
 
         for setting, instances in instance_dict.items():
-            laughs = [{'start': i[0], 'end': i[1]} for i in instances]
-            print(laughs)
+            self.result = [{'start': i[0], 'end': i[1]} for i in instances]
+        
+        donetime = time.time() - starttime
+        print(f'done with analysing in: {datetime.fromtimestamp(donetime).strftime("%H:%M:%S")}')
